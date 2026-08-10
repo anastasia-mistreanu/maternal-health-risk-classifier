@@ -1,27 +1,49 @@
 import sqlite3
 
-conn = sqlite3.connect("data/maternal_health_risk.db")
+def main(): 
+    conn = sqlite3.connect("data/maternal_health_risk.db")
+    remove_invalid_heart_rate_entries(conn)
+    add_pulse_pressure_column(conn)
+    verify_database(conn)
+    close_connection(conn)
 
-#select the first 5 rows from the maternal_health_risk table
-cursor = conn.execute("SELECT * FROM maternal_health_risk LIMIT 5") 
 
-for row in cursor:    #iterate through the cursor and print each row
-    print(row)
+def remove_invalid_heart_rate_entries(conn):
+    #delete irregular BPM data entries
+    cursor = conn.execute("DELETE FROM maternal_health_risk WHERE HeartRate < 30")
+    conn.commit()  #permanently save the changes to the database
 
-print("")
-#find irregular BPM data entries based on previous notebook detailing these
-cursor = conn.execute("SELECT * FROM maternal_health_risk WHERE HeartRate < 30")
 
-for row in cursor:
-    print(row)
+def add_pulse_pressure_column(conn):
+    #add pulse pressure column - engineered feature
+    try:
+        cursor = conn.execute("ALTER TABLE maternal_health_risk ADD COLUMN PulsePressure REAL")
 
-#delete irregular BPM data entries
-cursor = conn.execute("DELETE FROM maternal_health_risk WHERE HeartRate < 30")
-conn.commit()  #permanently save the changes to the database
+    except sqlite3.OperationalError:
+        print(f"Error adding PulsePressure column.")
 
-#confirm irregular rows are deleted
-cursor = conn.execute("SELECT * FROM maternal_health_risk WHERE HeartRate < 30")
-for row in cursor:
-    print(row)
+    cursor = conn.execute("UPDATE maternal_health_risk SET PulsePressure = SystolicBP - DiastolicBP")
+    conn.commit() 
 
-conn.close()
+
+def verify_database(conn):
+    cursor = conn.execute("SELECT COUNT(*) FROM maternal_health_risk")
+    for row in cursor:
+        print(row)
+    print()
+
+    cursor = conn.execute("PRAGMA table_info(maternal_health_risk)")
+    for row in cursor:
+        print(row)
+    print()
+
+    cursor = conn.execute("SELECT COUNT(*) FROM maternal_health_risk WHERE PulsePressure IS NULL")
+    for row in cursor:
+        print(row)
+    print()
+
+def close_connection(conn):
+    conn.close()
+
+if __name__ == "__main__":
+    main()
