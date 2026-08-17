@@ -214,8 +214,16 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+
 # Streamlit
 .streamlit/secrets.toml
 
-data/*.csv
-data/*.db
+# macOS
+.DS_Store
+
+# SQLite journal files (transient)
+*.db-journal
+
+# Model artefacts are committed intentionally: the Streamlit app loads them at runtime.
+# Uncomment if they grow large, and document the export step in the README instead.
+# models/*.joblib
